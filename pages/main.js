@@ -3,118 +3,88 @@ import { PermissionsAndroid, Platform } from 'react-native';
 import React, { useState } from 'react'
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
+import ReactNativeAsyncStorage from 'react-native-async-storage/src/storage';
 
 export default function Main() {
     const [recording, setRecording] = useState()
     const [recordingList, setRecordingList] = useState([])
     const [list, setList] = useState()
 
-    // async function start() {
-    //     const perm = await Audio.requestPermissionsAsync();
-    //     try {
-    //         (perm.status === "allowed")
-    //         await Audio.setAudioModeAsync({
-    //             allowsRecordingIOS: true,
-    //             playsInSilentModeIOS: true
-    //         });
-    //         const { recording } = await Audio.Recording.createAsync(Audio.RECORDING_OPTONS_PRESENT_HIGH_QUALITY)
-    //         setRecording(recording)
-    //     }
-    //     catch (error) {
-    //         // console.error()
-    //     }
-    // }
 
-async function start() {
-  try {
-    if (Platform.OS === 'android') {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
-        {
-          title: 'Microphone Permissions',
-          message: 'This app needs access to your microphone to record audio.',
-          buttonPositive: 'OK',
-          buttonNegative: 'Cancel',
+    // start recording function
+    async function start() {
+        try {
+            if (Platform.OS === 'android') {
+                const granted = await PermissionsAndroid.request(
+                    PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+                    {
+                        title: 'Microphone Permissions',
+                        message: 'This app needs access to your microphone to record audio.',
+                        buttonPositive: 'OK',
+                        buttonNegative: 'Cancel',
+                    }
+                );
+                if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+                    console.log('Microphone permission denied');
+                    return;
+                }
+            }
+
+            await Audio.requestPermissionsAsync();
+            await Audio.setAudioModeAsync({
+                allowsRecordingIOS: true,
+                playsInSilentModeIOS: true,
+            });
+            const { recording } = await Audio.Recording.createAsync(
+                Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY
+            );
+            setRecording(recording);
+        } catch (error) {
+            console.error(error);
         }
-      );
-      if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-        console.log('Microphone permission denied');
-        return;
-      }
     }
 
-    await Audio.requestPermissionsAsync();
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: true,
-      playsInSilentModeIOS: true,
-    });
-    const { recording } = await Audio.Recording.createAsync(
-      Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY
-    );
-    setRecording(recording);
-  } catch (error) {
-    console.error(error);
-  }
-}
 
 
-
-    // async function stopRecording() {
-    //     setRecording(undefined)
-
-    //     await recording.stopAndUploadAsync()
-    //     let allrecordings = [...recordingList]
-    //     const { sound, status } = await recording.createNewLoadingSoundAsync();
-    //     allrecordings.push({
-    //         sound: sound,
-    //         duration: getDurationFomatted(status.durationMillis),
-    //         file: recording.getURI()
-    //     })
-    //     setRecordingList(allrecordings)
-
-    // }
+//stop recording 
 
     const stopRecording = async () => {
         setRecording(undefined);
-    
+
         await recording.stopAndUnloadAsync();
-        let allrecordings = [...recordingList];
+        let allRecordings = [...recordingList];
         const { sound, status } = await recording.createNewLoadedSoundAsync();
-        allrecordings.push({
-          sound: sound,
-          duration: await getDurationFormatted(status.durationMillis),
-          file: recording.getURI(),
+
+        allRecordings.push({
+            sound: sound,
+            duration: await getDurationFormatted(status.durationMillis),
+            file: recording.getURI(),
         });
-        setRecordingList(allrecordings);
-      };
 
-    
+        setRecordingList(allRecordings);
+    };
 
-    // async function duration(milliseconds) {
-    //     const minutes = milliseconds / 1000 / 60
-    //     const seconds = Math.round((minutes - Math.floor(minutes)) * 60)
-    //     return seconds < 10 ? `${Math.floor(minutes)}` :`0 ${seconds}`
-
-    // }
 
     const getDurationFormatted = async (milliseconds) => {
         const minutes = milliseconds / 1000 / 60;
         const seconds = Math.round((minutes - Math.floor(minutes)) * 60);
         return seconds < 10 ? `${Math.floor(minutes)}:0${seconds}` : `${Math.floor(minutes)}:${seconds}`;
-      };
+    };
 
 
 
-
+    //get  usedr recording list
     async function getRecordingList() {
-        return recordingList.map((recordingListLines, id) => {
+        return recordingList.map((recordingListLines, index) => {
             return (
-                <View key={id} style={styles.rows}>
+                <View key={index} style={styles.rows}>
                     <Text style={styles.fill} >
-                        Recordings #{id + 1} |{recordingListLines.duration}
+
+                        Recordings #{index + 1} | {recordingListLines.duration}
+
                     </Text>
 
-                    <Button onPress={() => recordingListLines.sound.replayASync()} title='Play' />
+                    <Button onPress={() => recordingListLines.sound.replayAsync()} title='Play'></Button>
 
                 </View>
 
@@ -123,6 +93,8 @@ async function start() {
 
     }
 
+
+    //clear function
     async function clear() {
         alert("You have deleted all your recordings")
         setRecording([])
@@ -141,8 +113,16 @@ async function start() {
             </View>
 
             <Button title={recording ? 'Stop Recording' : 'Start Recording'} onPress={recording ? stopRecording : start} />
-            {/* <View> {getRecordingList()}</View> */}
-            <Button title={recording > 0 ? 'Clear Recordings' : ''} onPress={clear} />
+
+
+
+            <View>
+                {Object.values(getRecordingList()).map((value, index) => (
+                    <Text key={index}>{value}</Text>
+                ))}
+            </View>
+
+            <Button title={recording > 0 ? '' : 'Clear Recordings'} onPress={clear} />
 
         </View>
     )
@@ -154,7 +134,7 @@ const styles = StyleSheet.create({
         width: 230,
         height: 230,
         borderRadius: 1000,
-        backgroundColor: 'blue',
+        backgroundColor: 'white',
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -166,4 +146,26 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
 
     },
+
+    rows: {
+        flexDirection: 'row',
+        // paddingLeft: 15,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: 10,
+        marginRight: 40
+
+    },
+
+    fill: {
+
+        flex: 1,
+        margin: 15,
+        // paddingLeft: 15,
+        alignItems: 'center',
+        justifyContent: 'center',
+
+    },
+
+
 });
