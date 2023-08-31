@@ -1,14 +1,29 @@
-import { View, Text, ViewComponent, StyleSheet, Button } from 'react-native'
+import { View, Text, ViewComponent, StyleSheet, Button, ScrollViewBase } from 'react-native'
 import { PermissionsAndroid, Platform } from 'react-native';
-import React, { useState } from 'react'
-import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react'
+// import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
-import ReactNativeAsyncStorage from 'react-native-async-storage/src/storage';
+import { Ionicons } from '@expo/vector-icons';
+import { ScrollView } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+// import ReactNativeAsyncStorage from 'react-native-async-storage/src/storage';
+
+// import storage from 'react-native-async-storage';
+import { storage } from '../firebase/config';
+import { getStorage, ref, uploadBytes, getDownloadURL, uploadBytesResumable } from 'firebase/storage';
+import { collection, addDoc, serverTimestamp, updateDoc,
+  } from 'firebase/firestore';
 
 export default function Main() {
     const [recording, setRecording] = useState()
     const [recordingList, setRecordingList] = useState([])
-    const [list, setList] = useState()
+    const [recordingFile, setRecordingFile] = useState();
+
+
+    //use effect to save audio
+    useEffect(() => {
+
+    }, [])
 
 
     // start recording function
@@ -46,7 +61,7 @@ export default function Main() {
 
 
 
-//stop recording 
+    //stop recording 
 
     const stopRecording = async () => {
         setRecording(undefined);
@@ -62,16 +77,14 @@ export default function Main() {
         });
 
         setRecordingList(allRecordings);
+        setRecordingFile(updatedRecordings[1].file);
     };
-
 
     const getDurationFormatted = async (milliseconds) => {
         const minutes = milliseconds / 1000 / 60;
         const seconds = Math.round((minutes - Math.floor(minutes)) * 60);
         return seconds < 10 ? `${Math.floor(minutes)}:0${seconds}` : `${Math.floor(minutes)}:${seconds}`;
     };
-
-
 
     //get  usedr recording list
     async function getRecordingList() {
@@ -80,11 +93,15 @@ export default function Main() {
                 <View key={index} style={styles.rows}>
                     <Text style={styles.fill} >
 
-                        Recordings #{index + 1} | {recordingListLines.duration}
+                        Recordings # {index + 1} | {recordingListLines.duration}
 
                     </Text>
 
-                    <Button onPress={() => recordingListLines.sound.replayAsync()} title='Play'></Button>
+                    <Ionicons onPress={() => recordingListLines.sound.replayAsync()} name="ios-play" size={24} color="gray" />
+
+                    <Ionicons style={{ alignItems: 'flex-end' }} onPress={() => deleteRecordingByIndex(index)} name="remove-circle-sharp" size={24} color="gray" />
+
+                    {/* <Button hidden="true" color="gray" onPress={() => recordingListLines.sound.replayAsync()} title='Play'></Button> */}
 
                 </View>
 
@@ -93,36 +110,111 @@ export default function Main() {
 
     }
 
-
     //clear function
     async function clear() {
         alert("You have deleted all your recordings")
         setRecording([])
     }
 
+    async function deleteRecordingByIndex(index) {
+        // Assuming 'recordings' is an array containing the recordings
+        // Check if the index is within the valid range
+
+        console.log(index);
+        let updatedRecordings = [...recordingList]
+        if (index >= 0 && index < recordingList.length) {
+
+            // Use the splice() method to remove the recording at the specified index
+
+            recordingList.splice(index, 1);
+            console.log('Recording deleted successfully!');
+        } else {
+            console.log('Invalid index!');
+        }
+
+setRecordingList(updatedRecordings)
+    }
+
+    const Save = () => {
+        stopRecording().then(() => {
+            saveSoundAndUpdateDoc()
+        })
+    }
+
+
+    const saveSoundAndUpdateDoc = async (writing, recordingList) => {
+        const user = auth.currentUser;
+        const path = `[audio]/${user.uid}/[recoring]`;
+        const blob = await new Promise((resolve, reject) => {
+            const fetchXHR = new XMLHttpRequest();
+            fetchXHR.onload = function () {
+                resolve(fetchXHR.response);
+            };
+            fetchXHR.onerror = function (e) {
+                reject(new TypeError('Network request failed'));
+            };
+            fetchXHR.responseType = 'blob';
+            fetchXHR.open('GET', recordingList, true);
+            fetchXHR.send(null);
+        }).catch((err) => console.log(err));
+
+        const recordRef = ref(storage, path);
+
+        await uploadBytes(recordRef, blob)
+            .then(async (snapshot) => {
+                const downloadURL = await getDownloadURL(recordRef).then((recordURL) => {
+                    const addDocRef = collection(storage, 'recordings');
+                    addDoc(addDocRef, {
+                        creator: user.uid,
+                        recordURL,
+                        creation: serverTimestamp(),
+                    })
+                        .then(() => { })
+                        .then(() => resolve())
+                        .catch((err) => console.log(err));
+                });
+                blob.close();
+            })
+            .catch((err) => console.log(err));
+    };
+
+
+
     return (
-        <View>
-            <Text style={{ fontSize: 20, alignItems: 'center', color: 'gray' }}>Voice Recorder Application{"\n"}</Text>
+        <View style={{ width: '100%', flex: 1, paddingTop: 60, paddingBottom: 40, alignItems: 'center', }}>
+
+            <Text style={{ fontSize: 20, alignItems: 'center', color: 'black' }}>Voice Recorder Application</Text>
+
+            <Text>{"\n"}</Text>
 
             <View style={styles.container} >
                 {/* <View style={styles.container} /> */}
-                <Ionicons style={styles.mic} name="ios-mic-outline" size={150} color="gray" />
 
+                {recording ? <Ionicons name="stop" paddingLeft={10} size={100} color="white" /> : <Ionicons style={styles.mic} name="ios-mic-outline" size={150} color="white" />}
 
 
             </View>
+            <Text>{"\n"}</Text>
 
-            <Button title={recording ? 'Stop Recording' : 'Start Recording'} onPress={recording ? stopRecording : start} />
+            <Button borderRadius="5" paddingBottom="5" color="#e55d85" title={recording ? 'Stop Recording' : 'Start  Recording '} onPress={recording ? Save : start} />
+
+            {/* <Button paddingBottom="5" borderRadius="5" color="#e55d85" title={recording ? 'Clear recordings' : 'Clear recordings'} onPress={clear} />
+             */}
 
 
 
-            <View>
+
+
+
+            {/* <Button style={{ borderRadius: "5" }} color="#5FC3E4" title={recording > 0 ? '' : 'Clear Recordings'} onPress={clear} /> */}
+
+            <ScrollView paddingTop="20" style={styles.contentContainer}>
                 {Object.values(getRecordingList()).map((value, index) => (
                     <Text key={index}>{value}</Text>
                 ))}
-            </View>
 
-            <Button title={recording > 0 ? '' : 'Clear Recordings'} onPress={clear} />
+
+            </ScrollView>
 
         </View>
     )
@@ -134,7 +226,7 @@ const styles = StyleSheet.create({
         width: 230,
         height: 230,
         borderRadius: 1000,
-        backgroundColor: 'white',
+        backgroundColor: '#e55d87',
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -148,23 +240,35 @@ const styles = StyleSheet.create({
     },
 
     rows: {
+        borderTopColor: 'white',
+        width: 230,
         flexDirection: 'row',
         // paddingLeft: 15,
         alignItems: 'center',
         justifyContent: 'center',
         marginLeft: 10,
-        marginRight: 40
+        marginRight: 40,
+        width: "100%"
 
     },
 
     fill: {
 
         flex: 1,
-        margin: 15,
+        margin: 0,
         // paddingLeft: 15,
-        alignItems: 'center',
+        alignItems: 'flex-end',
         justifyContent: 'center',
 
+
+    },
+
+    contentContainer: {
+        paddingTop:5,
+        paddingVertical: 0,
+        // borderTopColor: "black",
+        // borderTopWidth: 1,
+        width: 300
     },
 
 
