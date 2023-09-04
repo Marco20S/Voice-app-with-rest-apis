@@ -9,7 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 // import ReactNativeAsyncStorage from 'react-native-async-storage/src/storage';
 
 // import storage from 'react-native-async-storage';
-import { storage } from '../firebase/config';
+import { database, storage } from '../firebase/config';
 import { getStorage, ref, uploadBytes, getDownloadURL, uploadBytesResumable } from 'firebase/storage';
 import { collection, addDoc, serverTimestamp, updateDoc,
   } from 'firebase/firestore';
@@ -77,7 +77,7 @@ export default function Main() {
         });
 
         setRecordingList(allRecordings);
-        setRecordingFile(updatedRecordings[1].file);
+        setRecordingFile(updatedRecordings[0].file);
     };
 
     const getDurationFormatted = async (milliseconds) => {
@@ -126,13 +126,13 @@ export default function Main() {
 
             // Use the splice() method to remove the recording at the specified index
 
-            recordingList.splice(index, 1);
+            updatedRecordings.splice(index, 1);
             console.log('Recording deleted successfully!');
         } else {
             console.log('Invalid index!');
         }
 
-setRecordingList(updatedRecordings)
+      setRecordingList(updatedRecordings)
     }
 
     const Save = () => {
@@ -143,8 +143,9 @@ setRecordingList(updatedRecordings)
 
 
     const saveSoundAndUpdateDoc = async (writing, recordingList) => {
-        const user = auth.currentUser;
-        const path = `[audio]/${user.uid}/[recoring]`;
+        // const user = auth.currentUser;
+        // const path = `[audio]/${user.uid}/[recoring]`;
+        const path = `[audio]/[recoring]/`;
         const blob = await new Promise((resolve, reject) => {
             const fetchXHR = new XMLHttpRequest();
             fetchXHR.onload = function () {
@@ -158,12 +159,12 @@ setRecordingList(updatedRecordings)
             fetchXHR.send(null);
         }).catch((err) => console.log(err));
 
-        const recordRef = ref(storage, path);
+        const recordRef = ref(database, path);
 
         await uploadBytes(recordRef, blob)
             .then(async (snapshot) => {
                 const downloadURL = await getDownloadURL(recordRef).then((recordURL) => {
-                    const addDocRef = collection(storage, 'recordings');
+                    const addDocRef = collection(database, 'recordings');
                     addDoc(addDocRef, {
                         creator: user.uid,
                         recordURL,
@@ -209,10 +210,12 @@ setRecordingList(updatedRecordings)
             {/* <Button style={{ borderRadius: "5" }} color="#5FC3E4" title={recording > 0 ? '' : 'Clear Recordings'} onPress={clear} /> */}
 
             <ScrollView paddingTop="20" style={styles.contentContainer}>
-                {Object.values(getRecordingList()).map((value, index) => (
-                    <Text key={index}>{value}</Text>
-                ))}
-
+                { 
+                console.log(recordingList)
+                // recordingList.map((value, index) => (
+                //     <Text key={index}>{value}</Text>
+                // ))}
+                }
 
             </ScrollView>
 
@@ -242,8 +245,8 @@ const styles = StyleSheet.create({
     rows: {
         borderTopColor: 'white',
         width: 230,
+
         flexDirection: 'row',
-        // paddingLeft: 15,
         alignItems: 'center',
         justifyContent: 'center',
         marginLeft: 10,
@@ -255,10 +258,9 @@ const styles = StyleSheet.create({
     fill: {
 
         flex: 1,
-        margin: 0,
-        // paddingLeft: 15,
-        alignItems: 'flex-end',
-        justifyContent: 'center',
+        margin: 15,
+        // alignItems: 'flex-end',
+        // justifyContent: 'center',
 
 
     },
