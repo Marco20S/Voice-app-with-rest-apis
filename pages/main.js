@@ -11,8 +11,7 @@ import { StatusBar } from 'expo-status-bar';
 // import storage from 'react-native-async-storage';
 import { database, storage } from '../firebase/config';
 import { getStorage, ref, uploadBytes, getDownloadURL, uploadBytesResumable } from 'firebase/storage';
-import { collection, addDoc, serverTimestamp, updateDoc,
-  } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, updateDoc, } from 'firebase/firestore';
 
 export default function Main() {
     const [recording, setRecording] = useState()
@@ -77,7 +76,14 @@ export default function Main() {
         });
 
         setRecordingList(allRecordings);
-        setRecordingFile(updatedRecordings[0].file);
+        // setRecordingFile(updatedRecordings[1].file);
+        const currentRecording = {
+            sound: sound,
+            duration: await getDurationFormatted(status.durationMillis),
+            file: recording.getURI(),
+        }
+
+        saveSoundAndUpdateDoc(currentRecording)
     };
 
     const getDurationFormatted = async (milliseconds) => {
@@ -87,7 +93,7 @@ export default function Main() {
     };
 
     //get  usedr recording list
-    async function getRecordingList() {
+    function getRecordingList() {
         return recordingList.map((recordingListLines, index) => {
             return (
                 <View key={index} style={styles.rows}>
@@ -107,7 +113,6 @@ export default function Main() {
 
             )
         })
-
     }
 
     //clear function
@@ -132,20 +137,30 @@ export default function Main() {
             console.log('Invalid index!');
         }
 
-      setRecordingList(updatedRecordings)
+        setRecordingList(updatedRecordings)
     }
 
     const Save = () => {
-        stopRecording().then(() => {
-            saveSoundAndUpdateDoc()
-        })
+        stopRecording()
+        // .then(() => {
+        //     saveSoundAndUpdateDoc()
+        // })
     }
 
 
-    const saveSoundAndUpdateDoc = async (writing, recordingList) => {
+    const saveSoundAndUpdateDoc = async (currentRecording) => {
         // const user = auth.currentUser;
         // const path = `[audio]/${user.uid}/[recoring]`;
-        const path = `[audio]/[recoring]/`;
+
+        console.log(currentRecording);
+
+        // for (let index = 0; index < recordingList.length; index++) {
+        // console.log('line150', recordingList[index]);
+
+        const recordTitle = `Recording${randomNumberInRange(1, 100)}`
+        const path = `[audio]/${recordTitle}`
+        console.log(path);
+
         const blob = await new Promise((resolve, reject) => {
             const fetchXHR = new XMLHttpRequest();
             fetchXHR.onload = function () {
@@ -155,28 +170,70 @@ export default function Main() {
                 reject(new TypeError('Network request failed'));
             };
             fetchXHR.responseType = 'blob';
-            fetchXHR.open('GET', recordingList, true);
+            fetchXHR.open('GET', currentRecording.file, true);
             fetchXHR.send(null);
         }).catch((err) => console.log(err));
 
-        const recordRef = ref(database, path);
+        const recordRef = ref(storage, path);
+
+        // try {
+        //     await addDoc(collection(database, 'recordings'), {
+        //         recordTitle: "recordTitle",
+        //         // creator: user.uid,
+        //         recordURL: "recordURL",
+        //         creation: "serverTimestamp()",
+        //     })
+        // } catch (error) {
+
+        //     console.log(error);
+        // }
+
+        // await uploadBytes(recordRef, blob)
+        //     .then(() => {
+        //         getDownloadURL(recordRef).then(async (recordURL) => {
+        //             console.log("line184", recordURL);
+        //             // const addDocRef = collection(database, 'recordings');
+        //             await addDoc(collection(database, 'recordings'), {
+        //                 recordTitle: recordTitle,
+        //                 recordURL: recordURL,
+        //                 creation: serverTimestamp(),
+        //             });
+
+        //         }).catch((err) => console.log(err))
+        //             // .then(() => {
+        //             //     console.log("success");
+        //             // })
+        //             // .then(() => resolve())
+
+        //         blob.close();
+        //     })
+        //     .catch((err) => console.log(err));
+
+        // }
 
         await uploadBytes(recordRef, blob)
-            .then(async (snapshot) => {
-                const downloadURL = await getDownloadURL(recordRef).then((recordURL) => {
-                    const addDocRef = collection(database, 'recordings');
-                    addDoc(addDocRef, {
-                        creator: user.uid,
-                        recordURL,
-                        creation: serverTimestamp(),
+            .then(() => {
+                getDownloadURL(recordRef)
+                    .then(async (recordURL) => {
+                        console.log("line 184", recordURL);
+                        await addDoc(collection(database, 'recordings'), {
+                            recordTitle: recordTitle,
+                            recordURL: recordURL,
+                            creation: serverTimestamp(),
+                        });
                     })
-                        .then(() => { })
-                        .then(() => resolve())
-                        .catch((err) => console.log(err));
-                });
+                    .catch((err) => console.log(err));
+
                 blob.close();
             })
             .catch((err) => console.log(err));
+
+
+    };
+
+    const randomNumberInRange = (min, max) => {
+        return Math.floor(Math.random()
+            * (max - min + 1)) + min;
     };
 
 
@@ -210,12 +267,10 @@ export default function Main() {
             {/* <Button style={{ borderRadius: "5" }} color="#5FC3E4" title={recording > 0 ? '' : 'Clear Recordings'} onPress={clear} /> */}
 
             <ScrollView paddingTop="20" style={styles.contentContainer}>
-                { 
-                console.log(recordingList)
-                // recordingList.map((value, index) => (
-                //     <Text key={index}>{value}</Text>
-                // ))}
-                }
+                {/* {Object.values(getRecordingList()).map((value, index) => (
+                    <Text key={index}>{value}</Text>
+                ))} */}
+                {getRecordingList()}
 
             </ScrollView>
 
@@ -249,8 +304,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        marginLeft: 10,
-        marginRight: 40,
+        // marginLeft: 0,
+        // marginRight: 10,
         width: "100%"
 
     },
@@ -266,11 +321,12 @@ const styles = StyleSheet.create({
     },
 
     contentContainer: {
-        paddingTop:5,
+        paddingTop: 5,
         paddingVertical: 0,
-        // borderTopColor: "black",
-        // borderTopWidth: 1,
-        width: 300
+        borderColor: "black",
+        borderWidth: 1,
+        width: "100%",
+        paddingHorizontal: 15
     },
 
 
