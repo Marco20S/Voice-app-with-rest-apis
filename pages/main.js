@@ -121,6 +121,7 @@ export default function Main() {
         setRecording([])
     }
 
+    //delete function
     async function deleteRecordingByIndex(index) {
         // Assuming 'recordings' is an array containing the recordings
         // Check if the index is within the valid range
@@ -154,8 +155,6 @@ export default function Main() {
 
         console.log(currentRecording);
 
-        // for (let index = 0; index < recordingList.length; index++) {
-        // console.log('line150', recordingList[index]);
 
         const recordTitle = `Recording${randomNumberInRange(1, 100)}`
         const path = `[audio]/${recordTitle}`
@@ -176,40 +175,6 @@ export default function Main() {
 
         const recordRef = ref(storage, path);
 
-        // try {
-        //     await addDoc(collection(database, 'recordings'), {
-        //         recordTitle: "recordTitle",
-        //         // creator: user.uid,
-        //         recordURL: "recordURL",
-        //         creation: "serverTimestamp()",
-        //     })
-        // } catch (error) {
-
-        //     console.log(error);
-        // }
-
-        // await uploadBytes(recordRef, blob)
-        //     .then(() => {
-        //         getDownloadURL(recordRef).then(async (recordURL) => {
-        //             console.log("line184", recordURL);
-        //             // const addDocRef = collection(database, 'recordings');
-        //             await addDoc(collection(database, 'recordings'), {
-        //                 recordTitle: recordTitle,
-        //                 recordURL: recordURL,
-        //                 creation: serverTimestamp(),
-        //             });
-
-        //         }).catch((err) => console.log(err))
-        //             // .then(() => {
-        //             //     console.log("success");
-        //             // })
-        //             // .then(() => resolve())
-
-        //         blob.close();
-        //     })
-        //     .catch((err) => console.log(err));
-
-        // }
 
         await uploadBytes(recordRef, blob)
             .then(() => {
@@ -254,7 +219,7 @@ export default function Main() {
             </View>
             <Text>{"\n"}</Text>
 
-            <Button borderRadius="5" paddingBottom="5" color="#e55d85" title={recording ? 'Stop Recording' : 'Start  Recording '} onPress={recording ? Save : start} />
+            <Button borderRadius="5" paddingBottom="5" color="#e55d85" title={recording ? 'Stop Recording' : 'Start  Recording '} onPress={recording ? stopRecording : start} />
 
             {/* <Button paddingBottom="5" borderRadius="5" color="#e55d85" title={recording ? 'Clear recordings' : 'Clear recordings'} onPress={clear} />
              */}
