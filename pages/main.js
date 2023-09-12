@@ -60,7 +60,7 @@ export default function Main() {
 
 
 
-    //stop recording 
+    //stop recording   --- create api
 
     const stopRecording = async () => {
         setRecording(undefined);
@@ -77,6 +77,8 @@ export default function Main() {
 
         setRecordingList(allRecordings);
         // setRecordingFile(updatedRecordings[1].file);
+
+
         const currentRecording = {
             sound: sound,
             duration: await getDurationFormatted(status.durationMillis),
@@ -92,7 +94,7 @@ export default function Main() {
         return seconds < 10 ? `${Math.floor(minutes)}:0${seconds}` : `${Math.floor(minutes)}:${seconds}`;
     };
 
-    //get  usedr recording list
+    //get  usedr recording list --- read
     function getRecordingList() {
         return recordingList.map((recordingListLines, index) => {
             return (
@@ -121,7 +123,7 @@ export default function Main() {
         setRecording([])
     }
 
-    //delete function
+    //delete function  ---- delete api
     async function deleteRecordingByIndex(index) {
         // Assuming 'recordings' is an array containing the recordings
         // Check if the index is within the valid range
@@ -192,6 +194,34 @@ export default function Main() {
                 blob.close();
             })
             .catch((err) => console.log(err));
+
+
+        //data structure for firebase
+        const documentData = {
+            fields: {
+                creation: {stringValue: serverTimestamp()},
+                recordTitle: {stringValue: recordTitle},
+                recordURL: {stringValue: recordURL},
+            }
+            // add more fields as needed
+        };
+
+        const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/recordings`;
+
+        const response = await fetch(url, {
+            method: "POST",
+            // headers: {
+            //   "Content-Type": "application/json",
+            //   Authorization: `Bearer ${accessToken}`,
+            // },
+            body: JSON.stringify({
+                fields: documentData,
+            }),
+        });
+
+        const addedData = await response.json();
+        console.log("Document created successfully:", addedData);
+
 
 
     };

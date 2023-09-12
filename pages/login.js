@@ -8,7 +8,7 @@ import { auth } from '../firebase/config';
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 
 
-export default function Login({navigation}) {
+export default function Login({ navigation }) {
 
     const [email, setEmail] = useState()
     const [password, setPassword] = useState()
@@ -23,11 +23,11 @@ export default function Login({navigation}) {
             // Alert.alert("Successfully Logged in")
             // setUP()
             navigation.navigate('main')
-          
+
 
         }).catch((error) => {
 
-            Alert.alert("Error",'User has entered imcorrect Password or email')
+            Alert.alert("Error", 'User has entered imcorrect Password or email')
 
             document.getElementById('message').style.display = "block"
             document.getElementById('message').style.color = "red"
@@ -50,17 +50,17 @@ export default function Login({navigation}) {
                 <View style={styles.innerContainer} >
 
                     <View style={styles.inputContainer} >
- {/* <Text id="message" hidden className="message">User entered the incorrect Username or Password! </Text> */}
+                        {/* <Text id="message" hidden className="message">User entered the incorrect Username or Password! </Text> */}
 
 
                         <TextInput style={styles.TextInput} placeholder="E-mail" onChangeText={(value) => setEmail(value)} />
-                        <TextInput secureTextEntry={true} autoCaplitalize='null'  style={styles.TextInput} placeholder="Password" onChangeText={(value) => setPassword(value)} />
+                        <TextInput secureTextEntry={true} autoCaplitalize='null' style={styles.TextInput} placeholder="Password" onChangeText={(value) => setPassword(value)} />
 
- {/* onPress={(e)=>{e.gotohomePage()}  */}
+                        {/* onPress={(e)=>{e.gotohomePage()}  */}
                         <View style={styles.actionContainer} >
                             <TouchableOpacity onPress={gotohomePage} style={styles.actionButton} >
 
-                                <Text  style={styles.signIn} >
+                                <Text style={styles.signIn} >
                                     Login</Text>
 
 
@@ -69,7 +69,7 @@ export default function Login({navigation}) {
                             <View style={styles.actionSignButton}>
 
                                 <Text style={styles.signUpAlready}>Don't have an account? </Text>
-                                <TouchableOpacity mode='contained' onPress={()=>navigation.navigate('signup')} style={{ marginLeft: 0 }} >
+                                <TouchableOpacity mode='contained' onPress={() => navigation.navigate('signup')} style={{ marginLeft: 0 }} >
                                     <Text style={styles.signUp}  >Sign Up</Text>
                                 </TouchableOpacity>
 
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     },
     signIn: {
         color: 'white',
-        
+
 
     }
 
