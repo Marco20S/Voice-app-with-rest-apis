@@ -25,6 +25,155 @@ export default function Main() {
     }, [])
 
 
+
+    //apis for firebase
+
+    //get user's recording list or single recording data --- read
+
+    const getAllRecordinglist = async () => {
+
+        const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/recordings`;
+
+
+        const response = await fetch(url)
+        const data = response.json();
+
+        if (response.ok) {
+            const doc = data.doc;
+            console.log("all documents", doc);
+
+        } else {
+
+            console.log('failed to get documents', error);
+        }
+    }
+
+
+    const getRecord = async () => {
+
+        const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/recordings`;
+
+        const response = await fetch(url, {
+            method: "GET",
+            // headers: {
+            //   Authorization: `Bearer ${accessToken}`,
+            // },
+        });
+
+
+        if (response.ok) {
+            const data = response.json();
+            console.log("Record retrieved Successfully", data);
+
+        } else {
+
+            console.log('Failed to get documents', error);
+        }
+    }
+
+
+    //create record in firestore
+    const createRecord = async () => {
+
+        const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/recordings`;
+
+        const recordTitle = `Recording${randomNumberInRange(1, 100)}`
+
+        //data structure for firebase
+        const documentData = {
+            fields: {
+               
+                recordTitle: { stringValue: "recordTitle" },
+                recordURL: { stringValue: "recordURL" },
+                creation: { timestampValue:  new Date().toDateString() },
+            }
+            
+        
+        };
+
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    // Authorization: `Bearer ${accessToken}`,
+                },
+                body: JSON.stringify(documentData),
+            });
+    
+            if (response.ok) {
+                const data = await response.json();
+                console.log('data ', data);
+            } else {
+                console.log('Error,,,', response.statusText);
+            }
+            
+        } catch (error) {
+            console.error('Error:', error);
+        }
+
+        // const response = await fetch(url, {
+        //     method: "POST",
+        //     headers: {
+        //       "Content-Type": "application/json",
+        //     //   Authorization: `Bearer ${accessToken}`,
+        //     },
+        //     body: JSON.stringify(documentData),
+        // })
+        // .then(
+        //     response => response.json()
+        // ).then(
+        //     data => console.log('data ', data)
+
+        // );
+
+        // if (response.ok) {
+        //     const addedData = await response.json();
+        //     console.log("Document created successfully:", addedData);
+        //   } else {
+        //     const error = await response.text();
+        //     console.error("Failed to create document:", error);
+        //   }
+
+        // const addedData = await response.json();
+        // console.log("Document created successfully:", addedData);
+    }
+
+    // delete record
+
+    const deleteRecord = async () => {
+
+        // const documentId = "your-document-id";
+
+        const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/recordings`;
+
+        const response = await fetch(url, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          });
+        
+          if (response.ok) {
+            console.log("Document deleted successfully");
+          } else {
+            const data = await response.json();
+            console.error("Failed to delete document:", data.error);
+          }
+        
+        
+
+    }
+
+
+
+
+
+
+
+    
+
+
     // start recording function
     async function start() {
         try {
@@ -88,20 +237,30 @@ export default function Main() {
         saveSoundAndUpdateDoc(currentRecording)
     };
 
+
+    //getting the duration of record 
     const getDurationFormatted = async (milliseconds) => {
         const minutes = milliseconds / 1000 / 60;
         const seconds = Math.round((minutes - Math.floor(minutes)) * 60);
         return seconds < 10 ? `${Math.floor(minutes)}:0${seconds}` : `${Math.floor(minutes)}:${seconds}`;
     };
 
-    //get  usedr recording list --- read
+
+
     function getRecordingList() {
         return recordingList.map((recordingListLines, index) => {
+
             return (
                 <View key={index} style={styles.rows}>
                     <Text style={styles.fill} >
 
                         Recordings # {index + 1} | {recordingListLines.duration}
+
+                        {/* get all records from firebase 
+                        {getAllRecordinglist}   |  {recordingListLines.duration}
+                        
+                         {getRecord}*/}
+
 
                     </Text>
 
@@ -177,52 +336,29 @@ export default function Main() {
 
         const recordRef = ref(storage, path);
 
+        let recordURL = ''
 
-        await uploadBytes(recordRef, blob)
-            .then(() => {
-                getDownloadURL(recordRef)
-                    .then(async (recordURL) => {
-                        console.log("line 184", recordURL);
-                        await addDoc(collection(database, 'recordings'), {
-                            recordTitle: recordTitle,
-                            recordURL: recordURL,
-                            creation: serverTimestamp(),
-                        });
-                    })
-                    .catch((err) => console.log(err));
+        // await uploadBytes(recordRef, blob)
+        //     .then(() => {
+        //         getDownloadURL(recordRef)
+        //             .then(async (_recordURL) => {
+        //                 console.log("line 184", _recordURL);
+        //                 await addDoc(collection(database, 'recordings'), {
+        //                     recordTitle: recordTitle,
+        //                     recordURL: _recordURL,
+        //                     creation: serverTimestamp(),
+        //                 });
+        //                 recordURL = _recordURL
+        //             })
+        //             .catch((err) => console.log(err));
 
-                blob.close();
-            })
-            .catch((err) => console.log(err));
-
-
-        //data structure for firebase
-        const documentData = {
-            fields: {
-                creation: {stringValue: serverTimestamp()},
-                recordTitle: {stringValue: recordTitle},
-                recordURL: {stringValue: recordURL},
-            }
-            // add more fields as needed
-        };
-
-        const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/recordings`;
-
-        const response = await fetch(url, {
-            method: "POST",
-            // headers: {
-            //   "Content-Type": "application/json",
-            //   Authorization: `Bearer ${accessToken}`,
-            // },
-            body: JSON.stringify({
-                fields: documentData,
-            }),
-        });
-
-        const addedData = await response.json();
-        console.log("Document created successfully:", addedData);
+        //         blob.close();
+        //     })
+        //     .catch((err) => console.log(err));
 
 
+
+            createRecord();
 
     };
 
