@@ -16,12 +16,12 @@ import { collection, addDoc, serverTimestamp, updateDoc, } from 'firebase/firest
 export default function Main() {
     const [recording, setRecording] = useState()
     const [recordingList, setRecordingList] = useState([])
-    const [recordingFile, setRecordingFile] = useState();
+    const [recordingFile, setRecordingFile] = useState([]);
 
 
     //use effect to save audio
     useEffect(() => {
-
+        getAllRecordinglist()
     }, [])
 
 
@@ -32,26 +32,69 @@ export default function Main() {
 
     const getAllRecordinglist = async () => {
 
-        const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/recordings`;
+        const key = ' AIzaSyDucXCaTtcvkZZESEfWER38i-eR6mk1zFo'
+        const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/recordings/?key=${key}`;
 
 
-        const response = await fetch(url)
-        const data = response.json();
+        // const response = await fetch(url)
+        // const data = response.json();
 
-        if (response.ok) {
-            const doc = data.doc;
-            console.log("all documents", doc);
+        // if (response.ok) {
+        //     const doc = data.doc;
+        //     console.log("all documents", doc);
 
-        } else {
+        // } else {
 
-            console.log('failed to get documents', error);
-        }
+        //     console.log('failed to get documents', error);
+        // }
+
+
+        await fetch(url).then(
+            responses => responses.json()
+        ).then(
+            (json) => {
+                // console.log(json.documents)
+                const documents = json.documents
+
+                let myRecordArray = []
+
+                documents.forEach(doc => {
+                    const idarray = doc.name.split('/')
+                    // console.log(idarray[idarray.length - 1]);
+
+                    const id = idarray[idarray.length - 1];
+
+                    myRecordArray.push({
+                        id: id,
+                        ...doc.fields
+                    })
+
+                });
+
+
+                console.log(" records ..........", myRecordArray);
+
+                setRecordingFile(myRecordArray)
+
+            }
+        )
+            .catch(
+                error => console.log("error", error)
+            );
+
+
+
+
+
+
+
     }
 
 
     const getRecord = async () => {
 
-        const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/recordings`;
+        const key = ' AIzaSyDucXCaTtcvkZZESEfWER38i-eR6mk1zFo'
+        const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/recordings/?key=${key}`;
 
         const response = await fetch(url, {
             method: "GET",
@@ -71,43 +114,50 @@ export default function Main() {
         }
     }
 
+    const getList = () => {
+
+        getAllRecordinglist()
+
+    }
+
 
     //create record in firestore
     const createRecord = async () => {
 
-        const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/recordings`;
+        const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/recordings/`;
 
         const recordTitle = `Recording${randomNumberInRange(1, 100)}`
 
         //data structure for firebase
         const documentData = {
             fields: {
-               
-                recordTitle: { stringValue: "recordTitle" },
-                recordURL: { stringValue: "recordURL" },
-                creation: { timestampValue:  new Date().toDateString() },
+
+                "recordTitle": { stringValue: recordTitle },
+                "recordURL": { stringValue: "recordURL" },
+                "creation": { stringValue: new Date().toDateString() },
             }
-            
-        
+
+
         };
 
         try {
             const response = await fetch(url, {
-                method: "POST",
+
                 headers: {
                     "Content-Type": "application/json",
                     // Authorization: `Bearer ${accessToken}`,
                 },
+                method: "POST",
                 body: JSON.stringify(documentData),
             });
-    
+
             if (response.ok) {
                 const data = await response.json();
                 console.log('data ', data);
             } else {
                 console.log('Error,,,', response.statusText);
             }
-            
+
         } catch (error) {
             console.error('Error:', error);
         }
@@ -141,27 +191,28 @@ export default function Main() {
 
     // delete record
 
-    const deleteRecord = async () => {
+    const deleteRecord = async (id) => {
 
         // const documentId = "your-document-id";
 
-        const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/recordings`;
+        const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/recordings/${id}`;
 
         const response = await fetch(url, {
+
+            // headers: {
+            //     Authorization: `Bearer ${accessToken}`,
+            // },
+
             method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          });
-        
-          if (response.ok) {
+        });
+
+        if (response.ok) {
             console.log("Document deleted successfully");
-          } else {
+        } else {
             const data = await response.json();
             console.error("Failed to delete document:", data.error);
-          }
-        
-        
+        }
+
 
     }
 
@@ -171,7 +222,7 @@ export default function Main() {
 
 
 
-    
+
 
 
     // start recording function
@@ -248,32 +299,37 @@ export default function Main() {
 
 
     function getRecordingList() {
-        return recordingList.map((recordingListLines, index) => {
-
+        console.log("test",recordingFile );
+        return recordingFile.map((recordingListLines, index) => {
             return (
-                <View key={index} style={styles.rows}>
-                    <Text style={styles.fill} >
+                    <View key={index} style={styles.rows}>
+                   <Text style={styles.fill} >
 
-                        Recordings # {index + 1} | {recordingListLines.duration}
+                        Recordings # {index + 1} {recordingListLines.duration}
 
-                        {/* get all records from firebase 
-                        {getAllRecordinglist}   |  {recordingListLines.duration}
-                        
-                         {getRecord}*/}
+                         {/* get all records from firebase  */}
+                        {recordingListLines.id} |  {recordingListLines.duration}
+
+                        {/* {getList()
+                        } */}
 
 
                     </Text>
 
-                    <Ionicons onPress={() => recordingListLines.sound.replayAsync()} name="ios-play" size={24} color="gray" />
+                <Text style={{color:"black"}}>
+                  {/* {recordingListLines.recordTitle.stringValue } */}
+                  {/* {recordingListLines.recordURL.stringValue } */}
+                </Text>
 
-                    <Ionicons style={{ alignItems: 'flex-end' }} onPress={() => deleteRecordingByIndex(index)} name="remove-circle-sharp" size={24} color="gray" />
+                <Ionicons onPress={() => recordingListLines.sound.replayAsync()} name="ios-play" size={24} color="gray" />
 
-                    {/* <Button hidden="true" color="gray" onPress={() => recordingListLines.sound.replayAsync()} title='Play'></Button> */}
+                    <Ionicons style={{ alignItems: 'flex-end' }} onPress={() => deleteRecord(recordingListLines.id)} name="remove-circle-sharp" size={24} color="gray" />
 
-                </View>
+                {/* <Button hidden="true" color="gray" onPress={() => recordingListLines.sound.replayAsync()} title='Play'></Button> */}
 
-            )
-        })
+            </View>
+
+        )})
     }
 
     //clear function
@@ -358,7 +414,7 @@ export default function Main() {
 
 
 
-            createRecord();
+        createRecord();
 
     };
 

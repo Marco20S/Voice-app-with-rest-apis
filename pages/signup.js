@@ -7,7 +7,7 @@ import { setDoc } from 'firebase/firestore'
 import { useNavigation } from '@react-navigation/native'
 
 
-export default function Signup({navigation}) {
+export default function Signup({ navigation }) {
 
     const [email, setEmail] = useState()
     const [username, setUsername] = useState()
@@ -37,6 +37,47 @@ export default function Signup({navigation}) {
             console.log(error);
 
         }
+
+    }
+
+    const newUser = async () => {
+
+        const key = ' AIzaSyDucXCaTtcvkZZESEfWER38i-eR6mk1zFo'
+        const url = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${key}`;
+
+
+        const documentData = {
+            field: {
+
+                email: { stringValue: email },
+                username: { stringValue: username },
+                password: { stringValue: password }
+
+            }
+        }
+
+        try {
+            const response = await fetch(url, {
+
+                headers:{
+                    'Content-Type':"application"
+                },
+
+                method: "POST",
+                body: JSON.stringify(documentData),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('data ', data);
+            } else {
+                console.log('Error,,,', response.statusText);
+            }
+
+        } catch (error) {
+            console.error('Error:', error);
+        }
+
 
     }
 
@@ -78,8 +119,8 @@ export default function Signup({navigation}) {
                         <TextInput style={styles.TextInput} secureTextEntry={true} value={password} placeholder="Password" onChangeText={(value) => setPassword(value)} />
 
                         {/* <Button/> */}
-                        <View  style={styles.actionContainer} >
-                            <TouchableOpacity onPress={register} style={styles.actionButton} >
+                        <View style={styles.actionContainer} >
+                            <TouchableOpacity onPress={newUser} style={styles.actionButton} >
 
                                 <Text style={styles.signIn} >
                                     Sign Up</Text>
@@ -100,7 +141,7 @@ export default function Signup({navigation}) {
                         <View style={styles.actionSignButton}>
 
                             <Text color style={styles.signUpAlready}>Already have an account? </Text>
-                            <TouchableOpacity onPress={()=>{navigation.navigate('login')}} style={{ marginLeft: 0 }} >
+                            <TouchableOpacity onPress={() => { navigation.navigate('login') }} style={{ marginLeft: 0 }} >
                                 <Text style={styles.signUp} > Login</Text>
                             </TouchableOpacity>
 

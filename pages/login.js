@@ -15,6 +15,49 @@ export default function Login({ navigation }) {
     // const navigation = useNavigation()
 
 
+    const currentUser = async () => {
+
+        const key = ' AIzaSyDucXCaTtcvkZZESEfWER38i-eR6mk1zFo'
+        const url = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${key}`;
+
+
+        const documentData = {
+            field: {
+
+                email: { stringValue: email },
+                // username: { stringValue: username },
+                password: { stringValue: password }
+
+            }
+        }
+
+        try {
+            const response = await fetch(url, {
+
+                headers:{
+                    'Content-Type':"application"
+                },
+
+                method: "POST",
+                body: JSON.stringify(documentData),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('data ', data);
+            } else {
+                console.log('Error,,,', response.statusText);
+            }
+
+        } catch (error) {
+            console.error('Error:', error);
+        }
+
+
+    }
+
+
+
     const gotohomePage = (() => {
 
         signInWithEmailAndPassword(auth, email, password).then(() => {
