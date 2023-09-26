@@ -23,10 +23,10 @@ export default function App() {
   useEffect(() => {
     console.log("outside ===== OnAuth change")
 
-    auth.onAuthStateChanged(async (user) => {
+    auth.onAuthStateChanged(async (username) => {
 
-      if (user) {
-        console.log("OnAuth change", user)
+      if (username) {
+        console.log("OnAuth change", username)
 
         // const emailRef = await getDoc(doc(database, 'admin', user.email))
         // const emailRef = doc(collection(database, 'admin', user.email))
@@ -45,7 +45,9 @@ export default function App() {
         //   //setUP()
         // }
 
-        const docRef = doc(database, 'users', user.email);
+        
+
+        const docRef = doc(database, 'users', username.email);
         const docSnap = await getDoc(docRef);
         console.log(docRef.firestore.toJSON());
 
@@ -74,8 +76,8 @@ export default function App() {
 
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {/* <Stack.Screen name='login' component={Login} /> */}
-        {/* <Stack.Screen name='signup' component={Signup} /> */}
+        <Stack.Screen name='login' component={Login} />
+        <Stack.Screen name='signup' component={Signup} />
         <Stack.Screen name='main' component={Main} />
       </Stack.Navigator>
     </NavigationContainer>

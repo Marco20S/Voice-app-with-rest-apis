@@ -1,4 +1,4 @@
-import { ScrollView, View, Text, StyleSheet, TextInputComponent, Button, TouchableOpacity } from 'react-native'
+import { ScrollView, View, Text, StyleSheet, TextInputComponent, Button, TouchableOpacity, Alert } from 'react-native'
 import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react'
 import { TextInput } from 'react-native';
@@ -22,29 +22,29 @@ export default function Login({ navigation }) {
 
 
         const documentData = {
-            field: {
-
-                email: { stringValue: email },
-                // username: { stringValue: username },
-                password: { stringValue: password }
-
-            }
+            email,
+            password,
+            returnSecureToken: true,
         }
+
+        console.log(documentData);
+
 
         try {
             const response = await fetch(url, {
 
-                headers:{
-                    'Content-Type':"application"
+                headers: {
+                    'Content-Type': "application"
                 },
 
                 method: "POST",
                 body: JSON.stringify(documentData),
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                console.log('data ', data);
+            if (response) {
+                // console.log('data ', data);
+                return response.json();
+
             } else {
                 console.log('Error,,,', response.statusText);
             }
@@ -58,25 +58,42 @@ export default function Login({ navigation }) {
 
 
 
+
+
     const gotohomePage = (() => {
 
-        signInWithEmailAndPassword(auth, email, password).then(() => {
+        currentUser().then((responseData) => {
+            console.log('responseData', responseData);
 
-            Alert.alert('Success', 'User Successfully Logged in successfully')
-            // Alert.alert("Successfully Logged in")
-            // setUP()
-            navigation.navigate('main')
+            if (responseData.email ) {
+                Alert.alert('Success', 'User Successfully Logged in successfully')
+                navigation.navigate('main',{email: responseData.email})
+            }
+            else {
 
+                Alert.alert("Invaild, Please Enter the Correct Email or Password")
+            }
 
-        }).catch((error) => {
-
-            Alert.alert("Error", 'User has entered imcorrect Password or email')
-
-            document.getElementById('message').style.display = "block"
-            document.getElementById('message').style.color = "red"
-            document.getElementById('message').hidden = false
-
+          
         })
+
+        // signInWithEmailAndPassword(auth, email, password).then(() => {
+
+        //     Alert.alert('Success', 'User Successfully Logged in successfully')
+        //     // Alert.alert("Successfully Logged in")
+        //     // setUP()
+        //     navigation.navigate('main')
+
+
+        // }).catch((error) => {
+
+        //     Alert.alert("Error", 'User has entered imcorrect Password or email')
+
+        //     document.getElementById('message').style.display = "block"
+        //     document.getElementById('message').style.color = "red"
+        //     document.getElementById('message').hidden = false
+
+        // })
 
     })
 
@@ -96,8 +113,8 @@ export default function Login({ navigation }) {
                         {/* <Text id="message" hidden className="message">User entered the incorrect Username or Password! </Text> */}
 
 
-                        <TextInput style={styles.TextInput} placeholder="E-mail" onChangeText={(value) => setEmail(value)} />
-                        <TextInput secureTextEntry={true} autoCaplitalize='null' style={styles.TextInput} placeholder="Password" onChangeText={(value) => setPassword(value)} />
+                        <TextInput style={styles.TextInput} placeholder="E-mail" onChangeText={(value) => setEmail(value)} value={email} />
+                        <TextInput secureTextEntry={true} autoCaplitalize='null' style={styles.TextInput} placeholder="Password" onChangeText={(value) => setPassword(value)} value={password} />
 
                         {/* onPress={(e)=>{e.gotohomePage()}  */}
                         <View style={styles.actionContainer} >

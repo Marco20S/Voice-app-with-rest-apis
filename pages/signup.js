@@ -120,7 +120,7 @@ export default function Signup({ navigation }) {
 
                         {/* <Button/> */}
                         <View style={styles.actionContainer} >
-                            <TouchableOpacity onPress={newUser} style={styles.actionButton} >
+                            <TouchableOpacity onPress={register} style={styles.actionButton} >
 
                                 <Text style={styles.signIn} >
                                     Sign Up</Text>

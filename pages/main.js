@@ -1,11 +1,13 @@
-import { View, Text, ViewComponent, StyleSheet, Button, ScrollViewBase } from 'react-native'
+import { View, Text, ViewComponent, StyleSheet, Button, ScrollViewBase, Pressable, TouchableOpacity, Alert } from 'react-native'
 import { PermissionsAndroid, Platform } from 'react-native';
 import React, { useEffect, useState } from 'react'
 // import { Ionicons } from '@expo/vector-icons';
+import { AntDesign } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { getAuth, signOut } from "firebase/auth";
 // import ReactNativeAsyncStorage from 'react-native-async-storage/src/storage';
 
 // import storage from 'react-native-async-storage';
@@ -13,7 +15,8 @@ import { database, storage } from '../firebase/config';
 import { getStorage, ref, uploadBytes, getDownloadURL, uploadBytesResumable } from 'firebase/storage';
 import { collection, addDoc, serverTimestamp, updateDoc, } from 'firebase/firestore';
 
-export default function Main() {
+export default function Main({ route, navigation }) {
+
     const [recording, setRecording] = useState()
     const [recordingList, setRecordingList] = useState([])
     const [recordingFile, setRecordingFile] = useState([]);
@@ -25,6 +28,12 @@ export default function Main() {
     }, [])
 
 
+    // const { email } = route.params
+    const email = 'user@example.com'
+
+    console.log(email);
+
+
 
     //apis for firebase
 
@@ -33,7 +42,8 @@ export default function Main() {
     const getAllRecordinglist = async () => {
 
         const key = ' AIzaSyDucXCaTtcvkZZESEfWER38i-eR6mk1zFo'
-        const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/recordings/?key=${key}`;
+        // const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/recordings/?key=${key}`;
+        const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/users/${email}/recordings/?key=${key}`;
 
 
         // const response = await fetch(url)
@@ -85,8 +95,16 @@ export default function Main() {
 
 
 
+    }
 
 
+    const logout = () => {
+
+        const auth = getAuth();
+        signOut(auth).then(() => {
+            Alert.alert("Success", "User has logged out Successfully")
+            navigation.navigate('login')
+        })
 
     }
 
@@ -122,9 +140,12 @@ export default function Main() {
 
 
     //create record in firestore
-    const createRecord = async () => {
+    const createRecord = async (downloadURL) => {
 
-        const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/recordings/`;
+
+
+        // const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/recordings/`;
+        const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/users/${email}/recordings/`;
 
         const recordTitle = `Recording${randomNumberInRange(1, 100)}`
 
@@ -133,7 +154,7 @@ export default function Main() {
             fields: {
 
                 "recordTitle": { stringValue: recordTitle },
-                "recordURL": { stringValue: "recordURL" },
+                "recordURL": { stringValue: downloadURL },
                 "creation": { stringValue: new Date().toDateString() },
             }
 
@@ -195,7 +216,8 @@ export default function Main() {
 
         // const documentId = "your-document-id";
 
-        const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/recordings/${id}`;
+        // const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/recordings/${id}`;
+        const url = `https://firestore.googleapis.com/v1/projects/voice-record-app-4ccfd/databases/(default)/documents/users/${email}/recordings/${id}`;
 
         const response = await fetch(url, {
 
@@ -212,6 +234,12 @@ export default function Main() {
             const data = await response.json();
             console.error("Failed to delete document:", data.error);
         }
+
+        //update to current list
+        setRecordingFile(prev => {
+            return prev.filter(record => record.id !== id)
+
+        })
 
 
     }
@@ -266,7 +294,7 @@ export default function Main() {
         setRecording(undefined);
 
         await recording.stopAndUnloadAsync();
-        let allRecordings = [...recordingList];
+        let allRecordings = [...recordingFile];
         const { sound, status } = await recording.createNewLoadedSoundAsync();
 
         allRecordings.push({
@@ -275,8 +303,9 @@ export default function Main() {
             file: recording.getURI(),
         });
 
-        setRecordingList(allRecordings);
-        // setRecordingFile(updatedRecordings[1].file);
+        // setRecordingList(allRecordings);
+        setRecordingFile(allRecordings);
+        // setRecordingList(updatedRecordings[1].file);
 
 
         const currentRecording = {
@@ -299,15 +328,15 @@ export default function Main() {
 
 
     function getRecordingList() {
-        console.log("test",recordingFile );
+        console.log("test", recordingFile);
         return recordingFile.map((recordingListLines, index) => {
             return (
-                    <View key={index} style={styles.rows}>
-                   <Text style={styles.fill} >
+                <View key={index} style={styles.rows}>
+                    <Text style={styles.fill} >
 
                         Recordings # {index + 1} {recordingListLines.duration}
 
-                         {/* get all records from firebase  */}
+                        {/* get all records from firebase  */}
                         {recordingListLines.id} |  {recordingListLines.duration}
 
                         {/* {getList()
@@ -316,20 +345,21 @@ export default function Main() {
 
                     </Text>
 
-                <Text style={{color:"black"}}>
-                  {/* {recordingListLines.recordTitle.stringValue } */}
-                  {/* {recordingListLines.recordURL.stringValue } */}
-                </Text>
+                    <Text style={{ color: "black" }}>
+                        {/* {recordingListLines.recordTitle.stringValue } */}
+                        {/* {recordingListLines.recordURL.stringValue } */}
+                    </Text>
 
-                <Ionicons onPress={() => recordingListLines.sound.replayAsync()} name="ios-play" size={24} color="gray" />
+                    <Ionicons onPress={() => recordingListLines.sound.replayAsync()} name="ios-play" size={24} color="gray" />
 
                     <Ionicons style={{ alignItems: 'flex-end' }} onPress={() => deleteRecord(recordingListLines.id)} name="remove-circle-sharp" size={24} color="gray" />
 
-                {/* <Button hidden="true" color="gray" onPress={() => recordingListLines.sound.replayAsync()} title='Play'></Button> */}
+                    {/* <Button hidden="true" color="gray" onPress={() => recordingListLines.sound.replayAsync()} title='Play'></Button> */}
 
-            </View>
+                </View>
 
-        )})
+            )
+        })
     }
 
     //clear function
@@ -366,14 +396,18 @@ export default function Main() {
     }
 
 
+
     const saveSoundAndUpdateDoc = async (currentRecording) => {
         // const user = auth.currentUser;
         // const path = `[audio]/${user.uid}/[recoring]`;
 
+        const recordTitle = `Recording${randomNumberInRange(1, 100)}`
+
+        const storageUrl = `https://firebasestorage.googleapis.com/v0/b/voice-record-app-4ccfd.appspot.com/o/${email}%2F${recordTitle}`
+
         console.log(currentRecording);
 
 
-        const recordTitle = `Recording${randomNumberInRange(1, 100)}`
         const path = `[audio]/${recordTitle}`
         console.log(path);
 
@@ -393,6 +427,29 @@ export default function Main() {
         const recordRef = ref(storage, path);
 
         let recordURL = ''
+
+        const downloadURL = await fetch(storageUrl, {
+
+            method: "POST",
+            headers: {
+                'Content-Type': `audio/m4a`
+            },
+
+            body: blob
+
+        }).then(response => {
+            return response.json()
+        }).then(data => {
+
+            console.log("Responseeeeee",data)
+
+            //https://firebasestorage.googleapis.com/v0/b/voice-record-app-4ccfd.appspot.com/o/user%40example.com%2FRecording67?alt=media&token=c1255073-87ae-445c-b808-f9ace9c5ec69
+
+            return storageUrl + `alt=media&token=${data.downloadTokens}`
+
+        })
+        console.log('downloadurl', downloadURL);
+
 
         // await uploadBytes(recordRef, blob)
         //     .then(() => {
@@ -414,7 +471,7 @@ export default function Main() {
 
 
 
-        createRecord();
+        createRecord(downloadURL);
 
     };
 
@@ -426,9 +483,13 @@ export default function Main() {
 
 
     return (
-        <View style={{ width: '100%', flex: 1, paddingTop: 60, paddingBottom: 40, alignItems: 'center', }}>
+        <View style={{ width: '100%', flex: 1, paddingTop: 60, paddingBottom: 40, alignItems: 'center', justifyContent: "flex-end" }}>
+            <View style={styles.containers} alignItems='flex-end'>
+                <TouchableOpacity onPress={logout}><AntDesign name="logout" size={24} color="#e55d87" /></TouchableOpacity>
+            </View>
 
             <Text style={{ fontSize: 20, alignItems: 'center', color: 'black' }}>Voice Recorder Application</Text>
+
 
             <Text>{"\n"}</Text>
 
@@ -515,6 +576,15 @@ const styles = StyleSheet.create({
         width: "100%",
         paddingHorizontal: 15
     },
+    containers: {
+        paddingTop: 5,
+        paddingVertical: 0,
+        // borderColor: "black",
+        // borderWidth: 1,
+        width: "100%",
+        paddingHorizontal: 15
+    },
+
 
 
 });
